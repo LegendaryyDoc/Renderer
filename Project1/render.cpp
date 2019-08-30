@@ -26,14 +26,17 @@ geometry makeGeometry(vertex * verts, size_t vertCount, unsigned * indices, size
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indxCount * sizeof(unsigned), indices, GL_STATIC_DRAW);
 
 	// describe vertex data
-	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(0); // position
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 
-	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(1); // normals
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)16);
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)sizeof(vertex::pos));
+	glEnableVertexAttribArray(2); // colors
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)32);
+
+	glEnableVertexAttribArray(3); // uvs
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)48);
 
 	// unbind buffers (in a specific order)
 	glBindVertexArray(0);
@@ -51,6 +54,53 @@ void freeGeometry(geometry &geo)
 	glDeleteVertexArrays(1, &geo.vao);
 
 	geo = {};
+}
+
+shader loadShader(const char * vertPath, const char * fragPath)
+{
+	std::string basicVert;
+	std::string basicFrag;
+	std::string str;
+
+	std::ifstream vertStream;
+	std::ifstream fragStream;
+
+	vertStream.open(vertPath);
+
+	if (vertStream.fail() == true)
+	{
+		std::cout << "Failed" << std::endl;;
+	}
+
+	while(std::getline(vertStream, str))
+	{
+		basicVert += str;
+		basicVert.push_back('\n');
+	}
+
+	vertStream.close();
+
+	fragStream.open(fragPath);
+
+	if (fragStream.fail() == true)
+	{
+		std::cout << "Failed" << std::endl;;
+	}
+
+	while (std::getline(fragStream, str))
+	{
+		basicFrag += str;
+		basicFrag.push_back('\n');
+	}
+
+	fragStream.close();
+
+	const char * vert = basicVert.c_str();
+	const char * frag = basicFrag.c_str();
+
+	shader newShad = makeShader(vert, frag);
+
+	return newShad;
 }
 
 shader makeShader(const char * vertSource, const char * fragSource)
@@ -104,6 +154,11 @@ void draw(const shader &shad, const geometry &geo)
 
 	// draw
 	glDrawElements(GL_TRIANGLES, geo.size, GL_UNSIGNED_INT, 0);
+}
+
+void setUniform(const shader & shad, GLuint location, const glm::vec3 &value)
+{
+	glProgramUniform3fv(shad.program, location, 1, glm::value_ptr(value));
 }
 
 void setUniform(const shader &shad, GLuint location, const glm::mat4 &value)
